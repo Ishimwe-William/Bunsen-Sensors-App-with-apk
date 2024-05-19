@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {StyleSheet, Text, TouchableOpacity, ScrollView, View} from 'react-native';
 import MapView, {Circle, Marker, Polygon, Polyline, PROVIDER_GOOGLE} from 'react-native-maps';
 import * as Location from 'expo-location';
 import {SendPushNotification} from "./assets/Notification";
@@ -38,8 +38,11 @@ const GPSTracker = () => {
     const [mapType, setMapType] = useState('standard');
     const [distance, setDistance] = useState(0);
     const [currentRegion, setCurrentRegion] = useState(null);
-    let lineEdge1 = 0.001;
-    let lineEdge2 = 0.001;
+    const [nearbyRegion, setNearbyRegion] = useState(null);
+    const [notifiedRegions, setNotifiedRegions] = useState({});
+
+    let lineEdge1 = 0.0001;
+    let lineEdge2 = 0.0001;
 
     useEffect(() => {
         (async () => {
@@ -86,9 +89,6 @@ const GPSTracker = () => {
         return totalDistance;
     };
 
-
-    const [nearbyRegion, setNearbyRegion] = useState(null);
-
     const checkGeofenceRegions = (coords) => {
         geofenceRegions.forEach((region) => {
             const distance = calculateDistanceBetweenPoints(
@@ -101,20 +101,36 @@ const GPSTracker = () => {
             if (distance <= region.radius) {
                 if (currentRegion !== region.id) {
                     setCurrentRegion(region.id);
-                    const message = `You are at '${region.id}'`
-                    SendPushNotification('Sensors App - Map Location', message)
+                    setNearbyRegion(null);
+                    if (!notifiedRegions[region.id]?.entered) {
+                        SendPushNotification('Sensors App - Map Location', `You are at '${region.id}'`);
+                        setNotifiedRegions((prev) => ({
+                            ...prev,
+                            [region.id]: {...prev[region.id], entered: true, exited: false, near: false}
+                        }));
+                    }
                 }
             } else if (distance <= region.radius + 100) {
                 if (nearbyRegion !== region.id) {
                     setNearbyRegion(region.id);
-                    const message = `You are closer to '${region.id}'`
-                    SendPushNotification('Sensors App - Map Location', message)
+                    if (!notifiedRegions[region.id]?.near) {
+                        SendPushNotification('Sensors App - Map Location', `You are closer to '${region.id}'`);
+                        setNotifiedRegions((prev) => ({
+                            ...prev,
+                            [region.id]: {...prev[region.id], near: true}
+                        }));
+                    }
                 }
             } else {
                 if (currentRegion === region.id) {
                     setCurrentRegion(null);
-                    const message = `You left '${region.id}'`
-                    SendPushNotification('Sensors App - Map Location', message)
+                    if (!notifiedRegions[region.id]?.exited) {
+                        SendPushNotification('Sensors App - Map Location', `You left '${region.id}'`);
+                        setNotifiedRegions((prev) => ({
+                            ...prev,
+                            [region.id]: {...prev[region.id], entered: false, exited: true, near: false}
+                        }));
+                    }
                 }
                 if (nearbyRegion === region.id) {
                     setNearbyRegion(null);
@@ -164,73 +180,87 @@ const GPSTracker = () => {
     }, [location]);
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>GPS Tracker</Text>
-            <Text>Line Distance: {distance.toFixed(2)} meters</Text>
-            {location && (
-                <MapView
-                    provider={PROVIDER_GOOGLE}
-                    ref={mapViewRef}
-                    style={styles.map}
-                    initialRegion={{
-                        latitude: location.coords.latitude,
-                        longitude: location.coords.longitude,
-                        latitudeDelta: 0.0922,
-                        longitudeDelta: 0.0421,
-                    }}
-                    mapType={mapType}
-                >
-                    <Marker
-                        coordinate={{
+        <ScrollView contentContainerStyle={{flexGrow: 1,}}>
+            <View style={styles.container}>
+                <Text style={styles.title}>GPS Tracker</Text>
+                <Text>Line Distance: {distance.toFixed(2)} meters</Text>
+                {location && (
+                    <MapView
+                        provider={PROVIDER_GOOGLE}
+                        ref={mapViewRef}
+                        style={styles.map}
+                        initialRegion={{
                             latitude: location.coords.latitude,
                             longitude: location.coords.longitude,
+                            latitudeDelta: 0.0922,
+                            longitudeDelta: 0.0421,
                         }}
-                        title="You are here"
-                        description={`Your current location: (${location.coords.latitude.toFixed(4)}, ${location.coords.longitude.toFixed(4)})`}
-                    />
-                    <Circle
-                        center={{
-                            latitude: location.coords.latitude,
-                            longitude: location.coords.longitude,
-                        }}
-                        radius={100}
-                        strokeColor="rgba(0, 0, 100, 0.5)"
-                        fillColor="rgba(0, 0, 255, 0.2)"
-                    />
-                    <Polygon
-                        coordinates={[
-                            {latitude: location.coords.latitude + 0.001, longitude: location.coords.longitude - 0.001},
-                            {latitude: location.coords.latitude - 0.001, longitude: location.coords.longitude - 0.001},
-                            {latitude: location.coords.latitude - 0.001, longitude: location.coords.longitude + 0.001},
-                            {latitude: location.coords.latitude + 0.001, longitude: location.coords.longitude + 0.001},
-                        ]}
-                        strokeColor="rgba(255, 0, 0, 0.5)"
-                        fillColor="rgba(100, 0, 0, 0.2)"
-                    />
-                    <Polyline
-                        coordinates={[
-                            {latitude: location.coords.latitude, longitude: location.coords.longitude},
-                            {
-                                latitude: location.coords.latitude + lineEdge1,
-                                longitude: location.coords.longitude + lineEdge2
-                            },
-                        ]}
-                        strokeColor="#ff0000"
-                        strokeWidth={2}
-                    />
-                </MapView>
-            )}
-            <View style={styles.buttonGroup}>
-                <TouchableOpacity onPress={toggleMapType} style={styles.toggleButton}>
-                    <Text>Switch to {mapType === 'standard' ? 'Satellite View' : 'Standard View'}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={centerOnUserLocation} style={styles.toggleButton}>
-                    <Text>My Location</Text>
-                </TouchableOpacity>
-            </View>
+                        mapType={mapType}
+                    >
+                        <Marker
+                            coordinate={{
+                                latitude: location.coords.latitude,
+                                longitude: location.coords.longitude,
+                            }}
+                            title="You are here"
+                            description={`Your current location: (${location.coords.latitude.toFixed(4)}, ${location.coords.longitude.toFixed(4)})`}
+                        />
+                        <Circle
+                            center={{
+                                latitude: location.coords.latitude,
+                                longitude: location.coords.longitude,
+                            }}
+                            radius={50}
+                            strokeColor="rgba(0, 0, 100, 0.5)"
+                            fillColor="rgba(0, 0, 255, 0.2)"
+                        />
+                        <Polygon
+                            coordinates={[
+                                {
+                                    latitude: location.coords.latitude + 0.0001,
+                                    longitude: location.coords.longitude - 0.0001
+                                },
+                                {
+                                    latitude: location.coords.latitude - 0.0001,
+                                    longitude: location.coords.longitude - 0.0001
+                                },
+                                {
+                                    latitude: location.coords.latitude - 0.0001,
+                                    longitude: location.coords.longitude + 0.0001
+                                },
+                                {
+                                    latitude: location.coords.latitude + 0.0001,
+                                    longitude: location.coords.longitude + 0.0001
+                                },
+                            ]}
+                            strokeColor="rgba(255, 0, 0, 0.5)"
+                            fillColor="rgba(100, 0, 0, 0.2)"
+                        />
+                        <Polyline
+                            coordinates={[
+                                {latitude: location.coords.latitude, longitude: location.coords.longitude},
+                                {
+                                    latitude: location.coords.latitude + lineEdge1,
+                                    longitude: location.coords.longitude + lineEdge2
+                                },
+                            ]}
+                            strokeColor="#ff0000"
+                            strokeWidth={2}
+                        />
+                    </MapView>
+                )}
+                <View style={styles.buttonGroup}>
+                    <TouchableOpacity onPress={toggleMapType} style={styles.toggleButton}>
+                        <Text>Switch to {mapType === 'standard' ? 'Satellite View' : 'Standard View'}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={centerOnUserLocation} style={styles.toggleButton}>
+                        <Text>My Location</Text>
+                    </TouchableOpacity>
+                </View>
 
-            <StatusBar style="dark"/>
-        </View>
+                <StatusBar style="dark"/>
+            </View>
+        </ScrollView>
     );
 };
 
@@ -240,6 +270,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginTop: '10%',
+       paddingBottom: '5%',
     },
     title: {
         fontSize: 24,

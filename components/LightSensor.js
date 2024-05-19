@@ -1,11 +1,11 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {StyleSheet, Text, View, Alert} from 'react-native';
+import {StyleSheet, Text, View, ScrollView, Alert} from 'react-native';
 import * as Brightness from 'expo-brightness';
 import * as Sensors from 'expo-sensors';
 import {LightGraph} from "./assets/LightLevelGraph";
 import {useIsFocused} from '@react-navigation/native';
 import {SendPushNotification} from "./assets/Notification";
-import { StatusBar } from 'expo-status-bar';
+import {StatusBar} from 'expo-status-bar';
 
 const LightSensor = () => {
     const [lightLevel, setLightLevel] = useState(0);
@@ -123,17 +123,19 @@ const LightSensor = () => {
     };
 
     return (
-        <View style={styles.container}>
-            <LightGraph lightLevel={lightLevel}/>
-            <Text style={styles.lightLevel}>
-                {isScreenCovered ? 'Screen covered' :
-                    <>
-                        <Text style={styles.threshold}>Screen is covered below {SCREEN_COVER_THRESHOLD} lux!</Text>
-                    </>
-                }
-            </Text>
-            <StatusBar style="dark" />
-        </View>
+        <ScrollView contentContainerStyle={{flexGrow: 1,}}>
+            <View style={styles.container}>
+                <LightGraph lightLevel={lightLevel}/>
+                <Text style={styles.lightLevel}>
+                    {isScreenCovered ? 'Screen covered' :
+                        <>
+                            <Text style={styles.threshold}>Screen is covered below {SCREEN_COVER_THRESHOLD} lux!</Text>
+                        </>
+                    }
+                </Text>
+                <StatusBar style="dark"/>
+            </View>
+        </ScrollView>
     );
 };
 
@@ -142,6 +144,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        marginTop:20,
     },
     title: {
         fontSize: 24,

@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from 'react';
-import {StyleSheet, Text, View, Dimensions, Image} from 'react-native';
+import {StyleSheet, Text, View, Dimensions, ScrollView, Image} from 'react-native';
 import * as Sensors from 'expo-sensors';
-import { StatusBar } from 'expo-status-bar';
+import {StatusBar} from 'expo-status-bar';
 
 const Compass = () => {
     const [heading, setHeading] = useState(0);
@@ -25,23 +25,25 @@ const Compass = () => {
     }, []);
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Compass</Text>
-            <View style={styles.compassContainer}>
-                <Image
-                    source={require('./assets/arrow-north.png')}
-                    style={[
-                        styles.needle,
-                        {
-                            transform: [{rotateZ: `${needleRotation}deg`}],
-                        },
-                    ]}
-                />
-                <View style={styles.compassBackground}/>
+        <ScrollView contentContainerStyle={{flexGrow: 1,}}>
+            <View style={styles.container}>
+                <Text style={styles.title}>Compass</Text>
+                <View style={styles.compassContainer}>
+                    <Image
+                        source={require('./assets/arrow-north.png')}
+                        style={[
+                            styles.needle,
+                            {
+                                transform: [{rotateZ: `${needleRotation}deg`}],
+                            },
+                        ]}
+                    />
+                    <View style={styles.compassBackground}/>
+                </View>
+                <Text style={styles.value}>Heading: {heading.toFixed(2)} degrees</Text>
+                <StatusBar style="dark"/>
             </View>
-            <Text style={styles.value}>Heading: {heading.toFixed(2)} degrees</Text>
-            <StatusBar style="dark" />
-        </View>
+        </ScrollView>
     );
 };
 

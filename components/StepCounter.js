@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import { Pedometer } from 'expo-sensors';
+import React, {useState, useEffect} from 'react';
+import {StyleSheet, Text, View, ScrollView, TouchableOpacity} from 'react-native';
+import {Pedometer} from 'expo-sensors';
 import {StatusBar} from "expo-status-bar";
 
 export default function StepCounter() {
@@ -49,35 +49,37 @@ export default function StepCounter() {
     };
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Step Counter</Text>
-            <Text style={styles.subtitle}>
-                Sensor status: {isPedometerAvailable ? 'Ready' : isPedometerAvailable}
-            </Text>
-            <View style={styles.stat}>
-                <Text style={styles.statLabel}>Current Steps:</Text>
-                <Text style={styles.statValue}>{currentStepCount}</Text>
+        <ScrollView contentContainerStyle={{flexGrow: 1,}}>
+            <View style={styles.container}>
+                <Text style={styles.title}>Step Counter</Text>
+                <Text style={styles.subtitle}>
+                    Sensor status: {isPedometerAvailable ? 'Ready' : isPedometerAvailable}
+                </Text>
+                <View style={styles.stat}>
+                    <Text style={styles.statLabel}>Current Steps:</Text>
+                    <Text style={styles.statValue}>{currentStepCount}</Text>
+                </View>
+                <View style={styles.buttonContainer}>
+                    <TouchableOpacity
+                        style={styles.button}
+                        onPress={startStopTracking}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={styles.buttonText}>
+                            {isTracking ? 'Stop Counting' : 'Start Counting'}
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.button}
+                        onPress={resetSteps}
+                        activeOpacity={0.7}
+                    >
+                        <Text style={styles.buttonText}>Reset Steps</Text>
+                    </TouchableOpacity>
+                </View>
+                <StatusBar style="dark"/>
             </View>
-            <View style={styles.buttonContainer}>
-                <TouchableOpacity
-                    style={styles.button}
-                    onPress={startStopTracking}
-                    activeOpacity={0.7}
-                >
-                    <Text style={styles.buttonText}>
-                        {isTracking ? 'Stop Counting' : 'Start Counting'}
-                    </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.button}
-                    onPress={resetSteps}
-                    activeOpacity={0.7}
-                >
-                    <Text style={styles.buttonText}>Reset Steps</Text>
-                </TouchableOpacity>
-            </View>
-            <StatusBar style="dark" />
-        </View>
+        </ScrollView>
     );
 }
 
